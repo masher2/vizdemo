@@ -8,41 +8,97 @@
 #
 
 library(shiny)
+library(shinydashboard)
+library(dplyr)
+library(highcharter)
+import::from("stringr", str_c)
+import::from("purrr", map)
 
-# Define UI for application that draws a histogram
-ui <- fluidPage(
-   
-   # Application title
-   titlePanel("Old Faithful Geyser Data"),
-   
-   # Sidebar with a slider input for number of bins 
-   sidebarLayout(
-      sidebarPanel(
-         sliderInput("bins",
-                     "Number of bins:",
-                     min = 1,
-                     max = 50,
-                     value = 30)
-      ),
-      
-      # Show a plot of the generated distribution
-      mainPanel(
-         plotOutput("distPlot")
+# Data --------------------------------------------------------------------
+
+df <- readr::read_csv("output/data_BRA.csv")
+
+year_list <- 
+  df %>% 
+  mutate(name = stringr::str_c(year, country, sep = " ")) %>% 
+  distinct(name, year) %>%
+  split(.$name) %>% 
+  map(~.$year) %>% 
+  c("All cups" = 0, .)
+  
+# User Interface ----------------------------------------------------------
+
+ui <- 
+  dashboardPage(
+
+    # Header --------------------------------------------------------------
+    dashboardHeader(title = "Brazil"),
+
+    # Sidebar -------------------------------------------------------------
+    dashboardSidebar(
+      selectInput("year",
+                  "Year of the world cup:",
+                  choices = year_list)
+    ),
+
+    # Body ----------------------------------------------------------------
+    dashboardBody(
+      fluidRow(
+        column(width = 8,
+               highchartOutput("goals_per_cup")),
+        valueBoxOutput("winner_count"),
+        valueBoxOutput("perc_win"),
+        valueBoxOutput("matches_played")
       )
-   )
-)
+    )
+  )
 
-# Define server logic required to draw a histogram
+
+# Server ------------------------------------------------------------------
+
 server <- function(input, output) {
-   
-   output$distPlot <- renderPlot({
-      # generate bins based on input$bins from ui.R
-      x    <- faithful[, 2] 
-      bins <- seq(min(x), max(x), length.out = input$bins + 1)
-      
-      # draw the histogram with the specified number of bins
-      hist(x, breaks = bins, col = 'darkgray', border = 'white')
-   })
+  
+  # Goals per cup ---------------------------------------------------------
+  output$goals_per_cup <- renderHighchart({
+    df %>% 
+      distinct(year, team_total_score) %>% 
+      hchart("line", hcaes(x = "year", y = "team_total_score"))
+  })
+  
+
+  # Counts ----------------------------------------------------------------
+  output$winner_count <- renderValueBox({
+    win_count <- df %>% 
+      distinct(year, winner, team_name) %>% 
+      summarise(is_winner = sum(if_else(winner == team_name, 1, 0))) %>% 
+      pull()
+    valueBox(value = win_count,
+             subtitle = "Times champion.")
+  })
+  output$perc_win <- renderValueBox({
+    matches_won <- df %>% 
+      distinct(year, match_id, team_initials, match_winner) %>% 
+      summarise(
+        matches_won = sum(team_initials == match_winner),
+        matches_played = n(),
+        perc_win = matches_won / matches_played
+      ) %>% 
+      pull(perc_win)
+    valueBox(value = scales::percent(matches_won),
+             subtitle = "of matches played won.")
+  })
+  output$matches_played <- renderValueBox({
+    ties <- df %>% 
+      distinct(year, match_id, match_winner) %>% 
+      summarise(
+        ties = sum(match_winner == "Tie"),
+        matches_played = n(),
+        perc_ties = ties / matches_played
+      ) %>% 
+      pull(perc_ties)
+    valueBox(value = scales::percent(ties),
+             subtitle = "of matches played were ties.")
+  })
 }
 
 # Run the application 
