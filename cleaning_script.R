@@ -47,8 +47,9 @@ matches  <-
   ungroup()
 
 worldcup <- 
-  read_excel("data/Dataset.xlsx", sheet=3) %>% 
-  clean_names()
+  read_excel("data/Dataset.xlsx", sheet = 3) %>% 
+  clean_names() %>% 
+  mutate(cupname = paste(country, year))
 
 # Joins -------------------------------------------------------------------
 
@@ -77,6 +78,7 @@ map(
     data %>% 
       filter(team_initials == x) %>% 
       write.csv(paste0("output/data_", x, ".csv"))
-    print(paste("Done for:", x))
+    print("Done for:")
+    cat(x)
   }
 )

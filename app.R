@@ -11,7 +11,6 @@ library(shiny)
 library(shinydashboard)
 library(dplyr)
 library(highcharter)
-import::from("purrr", map)
 
 # Data --------------------------------------------------------------------
 
@@ -83,9 +82,7 @@ server <- function(input, output, session) {
       linedata <-
         df %>% 
         filter(year == input$wc) %>% 
-        mutate(datetime = stringr::str_replace(datetime, "\\s-.*$", ""),
-               datetime2 = lubridate::dmy(datetime),
-               cupname = paste(country, year)) %>% 
+        mutate(datetime2 = lubridate::dmy_hm(datetime)) %>% 
         distinct(datetime, datetime2, match, score, cupname) %>% 
         arrange(datetime2)
 
@@ -162,4 +159,3 @@ server <- function(input, output, session) {
 
 # Run the application 
 shinyApp(ui = ui, server = server)
-
