@@ -61,15 +61,28 @@ data <-
 # Transformations ---------------------------------------------------------
 
 data %<>% 
+  mutate(datetime = lubridate::dmy_hm(datetime)) %>% 
+  arrange(datetime) %>% 
+  group_by(year, team_initials) %>% 
   mutate(
     team_outcome = case_when(
       team_name == winner ~ "Winner",
-      team_name == runners_up ~ "Runners up",
+      team_name == runners_up ~ "Runner up",
       team_name == third ~ "Third",
       team_name == fourth ~ "Fourth",
-      TRUE ~ "Lost before semifinals"
+      TRUE ~ last(stage)
+    )
+  ) %>% 
+  ungroup() %>% 
+  mutate(
+    team_outcome = case_when(
+      startsWith(team_outcome, "Group") ~ "First round",
+      startsWith(team_outcome, "Preli") ~ "First round",
+      startsWith(team_outcome, "Round") ~ "Eigth-finals",
+      TRUE ~ team_outcome
     )
   )
+  
 
 # Output ------------------------------------------------------------------
 
