@@ -13,9 +13,21 @@ library(magrittr)
 library(dplyr)
 library(highcharter)
 
-# Data --------------------------------------------------------------------
 
-df <- readr::read_csv("output/data_BRA.csv")
+# Choices -----------------------------------------------------------------
+
+country_list <-
+  readxl::read_excel("data/Dataset.xlsx", sheet = 2) %>% 
+  janitor::clean_names() %>% 
+  transmute(
+    home = paste(home_team_name, home_team_initials, sep = "/"),
+    away = paste(away_team_name, away_team_initials, sep = "/")
+  ) %>% 
+  gather() %>% 
+  distinct(value) %>% 
+  tidyr::separate(value, into = c("name", "initials"), sep ="/") %>% 
+  split(.$name) %>% 
+  purrr::map(~.$initials)
 
 wc_list <- c(
   "All cups"          = 0,
@@ -47,10 +59,15 @@ ui <-
   dashboardPage(
     
     # Header --------------------------------------------------------------
-    dashboardHeader(title = "Brazil"),
+    dashboardHeader(title = textOutput("teamname")),
 
     # Sidebar -------------------------------------------------------------
     dashboardSidebar(
+      selectInput("team",
+                  "Select a team:",
+                  choices = country_list,
+                  selected = "Algeria",
+                  selectize = FALSE),
       selectInput("wc",
                   "Year of the world cup:",
                   choices = wc_list,
@@ -83,13 +100,23 @@ ui <-
 
 server <- function(input, output, session) {
 
+  # Data --------------------------------------------------------------------
+  df <- reactive({
+    readr::read_csv(glue::glue("output/data_{input$team}.csv"))
+  })
+  
+  # Title -----------------------------------------------------------------
+  output$teamname <- renderText({
+    df() %>% pull(team_name) %>% .[1]
+  })
+  
   # Linechart -------------------------------------------------------------
   output$linechart <- renderHighchart({
   
     # Score per match -----------------------------------------------------
     if (input$wc != 0) {
       linedata <-
-        df %>% 
+        df() %>% 
         filter(year == input$wc) %>% 
         distinct(datetime, match, score, cupname) %>% 
         arrange(datetime)
@@ -114,7 +141,7 @@ server <- function(input, output, session) {
 
     # Score per cup -------------------------------------------------------
     } else {
-      linedata <- distinct(df, year, country, team_total_score)
+      linedata <- distinct(df(), year, country, team_total_score)
       
       highchart() %>% 
         hc_add_series(data = linedata$team_total_score,
@@ -137,13 +164,13 @@ server <- function(input, output, session) {
   observeEvent(input$wc_match, 
                {
                  match_date <- 
-                   df %>%
+                   df() %>%
                    filter(year == input$wc) %>%
                    distinct(datetime) %>%
                    pull() %>%
                    magrittr::extract(input$wc_match + 1)
                  
-                 match_info <- filter(df, datetime == match_date)
+                 match_info <- filter(df(), datetime == match_date)
                  
                  cup_name <- match_info[[1, "cupname"]]
                  match_teams <- match_info[[1, "match"]]
@@ -183,7 +210,7 @@ server <- function(input, output, session) {
   
   # Win count / position in cup -------------------------------------------
   output$winner_count <- renderValueBox({
-    win_count <- distinct(df, year, winner, team_name, team_outcome)
+    win_count <- distinct(df(), year, winner, team_name, team_outcome)
     
     if (input$wc != 0) win_count %<>% filter(year == input$wc)
     
@@ -202,7 +229,7 @@ server <- function(input, output, session) {
 
   # N matches won ---------------------------------------------------------
   output$perc_win <- renderValueBox({
-    matches_won <- distinct(df, year, match_id, team_initials, match_winner)
+    matches_won <- distinct(df(), year, match_id, team_initials, match_winner)
     
     if (input$wc != 0) matches_won %<>% filter(year == input$wc)
     
@@ -220,7 +247,7 @@ server <- function(input, output, session) {
   
   # % ties ----------------------------------------------------------------
   output$matches_played <- renderValueBox({
-    ties <- distinct(df, year, match_id, match_winner)
+    ties <- distinct(df(), year, match_id, match_winner)
     
     if (input$wc != 0) ties %<>% filter(year == input$wc)
     
