@@ -17,7 +17,7 @@ players  <-
     player_name = str_to_title(player_name),
     coach_name = str_remove(coach_name, "\\s\\(.+\\)$") %>% str_to_title()
   ) %>% 
-  select(-(position:event))
+  select(-team_initials)
 
 matches  <- 
   read_excel("data/Dataset.xlsx", sheet=2) %>% 
@@ -95,7 +95,8 @@ map(
   function(x) {
     data %>% 
       filter(team_initials == x) %>% 
-      write.csv(paste0("output/data_", x, ".csv"))
+      write.csv(paste0("output/data_", x, ".csv"),
+                row.names = FALSE)
     print(paste("Done for:", x))
   }
 )
