@@ -60,12 +60,19 @@ ui <-
 
     # Body ----------------------------------------------------------------
     dashboardBody(
-      fluidRow(
-        column(width = 8,
-               highchartOutput("linechart")),
-        valueBoxOutput("winner_count"),
-        valueBoxOutput("perc_win"),
-        valueBoxOutput("matches_played")
+      tabsetPanel(
+        id = "tabs",
+        tabPanel(
+          title = "Main panel",
+          value = "page1",
+          fluidRow(
+            column(width = 8,
+                   highchartOutput("linechart")),
+            valueBoxOutput("winner_count"),
+            valueBoxOutput("perc_win"),
+            valueBoxOutput("matches_played")
+          )
+        )
       )
     )
   )
@@ -95,7 +102,10 @@ server <- function(input, output, session) {
       highchart() %>% 
         hc_add_series(data = linedata$score,
                       name = "Score",
-                      showInLegend = FALSE) %>% 
+                      showInLegend = FALSE,
+                      events = list(
+                        click = JS("function(event) {Shiny.onInputChange('wc_match', [event.point.x]);}")
+                      )) %>% 
         hc_xAxis(categories = cats) %>% 
         hc_title(text = first(linedata$cupname)) %>% 
         hc_subtitle(text = "Score per match.")
@@ -106,13 +116,13 @@ server <- function(input, output, session) {
       linedata <- distinct(df, year, country, team_total_score)
       
       highchart() %>% 
-        hc_xAxis(categories = paste(linedata$country, linedata$year)) %>%
         hc_add_series(data = linedata$team_total_score,
                       name = "Total score",
                       showInLegend = FALSE,
                       events = list(
                         click = JS("function(event) {Shiny.onInputChange('wc_date', [event.point.category.name]);}")
                       )) %>% 
+        hc_xAxis(categories = paste(linedata$country, linedata$year)) %>%
         hc_title(text = "Total goals per cup")
     }
   })
@@ -120,6 +130,25 @@ server <- function(input, output, session) {
   # Observe clicks to the linechart ---------------------------------------
   observeEvent(input$wc_date != "",
                updateSelectInput(session, "wc", selected = wc_list[input$wc_date]),
+               ignoreInit = TRUE)
+  
+  observeEvent(input$wc_match, 
+               {
+                 match_date <- 
+                   df %>%
+                   filter(year == input$wc) %>%
+                   distinct(datetime) %>%
+                   pull() %>%
+                   magrittr::extract(input$wc_match + 1)
+                 
+                 match_info <-
+                   df %>%
+                   filter(datetime == match_date) %>%
+                   select(player_name, shirt_number, line_up, coach_name, stadium, city, match_winner, match)
+                 
+                 appendTab(inputId = "tabs",
+                           tabPanel("second", DT::renderDataTable(match_info)))
+               },
                ignoreInit = TRUE)
   
   # Win count / position in cup -------------------------------------------
