@@ -25,8 +25,8 @@ matches  <-
     win_conditions2 = str_match(win_conditions, "^(.+)\\swin") %>% .[, 2],
     match = str_c(home_team_initials, away_team_initials, sep = "-"),
     match_winner = case_when(
-      home_team_goals < away_team_goals ~ home_team_initials,
-      home_team_goals > away_team_goals ~ away_team_initials,
+      home_team_goals < away_team_goals ~ away_team_initials,
+      home_team_goals > away_team_goals ~ home_team_initials,
       (home_team_goals == away_team_goals) & (home_team_name == win_conditions2) ~ home_team_initials,
       (home_team_goals == away_team_goals) & (away_team_name == win_conditions2) ~ away_team_initials,
       (home_team_goals == away_team_goals) & is.na(win_conditions) ~ "Tie"
