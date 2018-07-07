@@ -9,6 +9,7 @@
 
 library(shiny)
 library(shinydashboard)
+library(magrittr)
 library(dplyr)
 library(highcharter)
 
@@ -124,12 +125,22 @@ server <- function(input, output, session) {
   
   # Counts ----------------------------------------------------------------
   output$winner_count <- renderValueBox({
-    win_count <- df %>% 
-      distinct(year, winner, team_name) %>% 
-      summarise(is_winner = sum(if_else(winner == team_name, 1, 0))) %>% 
-      pull()
-    valueBox(value = win_count,
-             subtitle = "Times champion.")
+    win_count <- distinct(df, year, winner, team_name, team_outcome)
+    
+    if (input$wc != 0) win_count %<>% filter(year == input$wc)
+    
+    win_count %<>% 
+      summarise(is_winner = sum(if_else(winner == team_name, 1, 0)),
+                team_outcome = first(team_outcome))
+    
+    if (input$wc == 0){ 
+      valueBox(value = win_count$is_winner,
+               subtitle = "Times champion.")
+    } else {
+      valueBox(value = win_count$team_outcome,
+               subtitle = "Position")
+    }
+    
   })
   output$perc_win <- renderValueBox({
     matches_won <- df %>% 
