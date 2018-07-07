@@ -55,7 +55,8 @@ ui <-
                   "Year of the world cup:",
                   choices = wc_list,
                   selected = "All cups",
-                  selectize = FALSE)
+                  selectize = FALSE),
+      actionButton("closetab", "Close current tab", icon("window-close"))
     ),
 
     # Body ----------------------------------------------------------------
@@ -64,7 +65,7 @@ ui <-
         id = "tabs",
         tabPanel(
           title = "Main panel",
-          value = "page1",
+          value = "main_tab",
           fluidRow(
             column(width = 8,
                    highchartOutput("linechart")),
@@ -127,11 +128,12 @@ server <- function(input, output, session) {
     }
   })
 
-  # Observe clicks to the linechart ---------------------------------------
+  # Filter by world cup ---------------------------------------------------
   observeEvent(input$wc_date != "",
                updateSelectInput(session, "wc", selected = wc_list[input$wc_date]),
                ignoreInit = TRUE)
-  
+
+  # Add match tab ---------------------------------------------------------
   observeEvent(input$wc_match, 
                {
                  match_date <- 
@@ -141,15 +143,43 @@ server <- function(input, output, session) {
                    pull() %>%
                    magrittr::extract(input$wc_match + 1)
                  
-                 match_info <-
-                   df %>%
-                   filter(datetime == match_date) %>%
-                   select(player_name, shirt_number, line_up, coach_name, stadium, city, match_winner, match)
+                 match_info <- filter(df, datetime == match_date)
                  
-                 appendTab(inputId = "tabs",
-                           tabPanel("second", DT::renderDataTable(match_info)))
+                 cup_name <- match_info[[1, "cupname"]]
+                 match_teams <- match_info[[1, "match"]]
+                 match_winner <- match_info[[1, "match_winner"]]
+                 match_score <- match_info[[1, "match_score"]]
+                 match_date <- match_info[[1, "datetime"]]
+                 coach <- match_info[[1, "coach_name"]]
+                 
+                 match_info %<>% 
+                   select(player_name, shirt_number, line_up)
+                 
+                 appendTab(
+                   inputId = "tabs",
+                   tabPanel(title = paste(cup_name, match_teams),
+                            fluidRow(
+                              column(width = 6,
+                                     valueBox(match_winner, "Winner", width = NULL),
+                                     valueBox(match_score, "Final score", width = NULL)),
+                              column(width = 6,
+                                     valueBox(lubridate::floor_date(match_date, "day"), "Date of the match", width = NULL),
+                                     valueBox(coach, "Team coach", width = NULL))
+                            ),
+                            fluidRow(
+                              box(width = 12,
+                                  title = "Team lineup",
+                                  DT::renderDataTable(match_info))
+                            )))
                },
                ignoreInit = TRUE)
+  
+
+  # Close current tab -----------------------------------------------------
+  observeEvent(input$closetab,
+               if (input$tabs != "main_tab") {
+                 removeTab("tabs", input$tabs)
+               })
   
   # Win count / position in cup -------------------------------------------
   output$winner_count <- renderValueBox({
