@@ -83,9 +83,8 @@ server <- function(input, output, session) {
       linedata <-
         df %>% 
         filter(year == input$wc) %>% 
-        mutate(datetime2 = lubridate::dmy_hm(datetime)) %>% 
-        distinct(datetime, datetime2, match, score, cupname) %>% 
-        arrange(datetime2)
+        distinct(datetime, match, score, cupname) %>% 
+        arrange(datetime)
 
       if (nrow(linedata) > 1) {
         cats <- linedata$match
@@ -123,7 +122,7 @@ server <- function(input, output, session) {
                updateSelectInput(session, "wc", selected = wc_list[input$wc_date]),
                ignoreInit = TRUE)
   
-  # Counts ----------------------------------------------------------------
+  # Win count / position in cup -------------------------------------------
   output$winner_count <- renderValueBox({
     win_count <- distinct(df, year, winner, team_name, team_outcome)
     
@@ -140,29 +139,40 @@ server <- function(input, output, session) {
       valueBox(value = win_count$team_outcome,
                subtitle = "Position")
     }
-    
   })
+
+  # N matches won ---------------------------------------------------------
   output$perc_win <- renderValueBox({
-    matches_won <- df %>% 
-      distinct(year, match_id, team_initials, match_winner) %>% 
+    matches_won <- distinct(df, year, match_id, team_initials, match_winner)
+    
+    if (input$wc != 0) matches_won %<>% filter(year == input$wc)
+    
+    matches_won %<>% 
       summarise(
         matches_won = sum(team_initials == match_winner),
         matches_played = n(),
         perc_win = matches_won / matches_played
       ) %>% 
       pull(perc_win)
+    
     valueBox(value = scales::percent(matches_won),
              subtitle = "of matches played won.")
   })
+  
+  # % ties ----------------------------------------------------------------
   output$matches_played <- renderValueBox({
-    ties <- df %>% 
-      distinct(year, match_id, match_winner) %>% 
+    ties <- distinct(df, year, match_id, match_winner)
+    
+    if (input$wc != 0) ties %<>% filter(year == input$wc)
+    
+    ties %<>% 
       summarise(
         ties = sum(match_winner == "Tie"),
         matches_played = n(),
         perc_ties = ties / matches_played
       ) %>% 
       pull(perc_ties)
+    
     valueBox(value = scales::percent(ties),
              subtitle = "of matches played were ties.")
   })
