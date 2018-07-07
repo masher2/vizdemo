@@ -66,7 +66,8 @@ data %<>%
       team_name == winner ~ "Winner",
       team_name == runners_up ~ "Runners up",
       team_name == third ~ "Third",
-      team_name == fourth ~ "Fourth"
+      team_name == fourth ~ "Fourth",
+      TRUE ~ "Lost before semifinals"
     )
   )
 
@@ -78,7 +79,6 @@ map(
     data %>% 
       filter(team_initials == x) %>% 
       write.csv(paste0("output/data_", x, ".csv"))
-    print("Done for:")
-    cat(x)
+    print(paste("Done for:", x))
   }
 )
