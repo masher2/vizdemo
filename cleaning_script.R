@@ -13,7 +13,10 @@ library(purrr)
 players  <- 
   read_excel("data/Dataset.xlsx", sheet=1) %>% 
   clean_names() %>% 
-  mutate(player_name = str_to_title(player_name)) %>% 
+  mutate(
+    player_name = str_to_title(player_name),
+    coach_name = str_remove(coach_name, "\\s\\(.+\\)$") %>% str_to_title()
+  ) %>% 
   select(-(position:event))
 
 matches  <- 
@@ -30,7 +33,8 @@ matches  <-
       (home_team_goals == away_team_goals) & (home_team_name == win_conditions2) ~ home_team_initials,
       (home_team_goals == away_team_goals) & (away_team_name == win_conditions2) ~ away_team_initials,
       (home_team_goals == away_team_goals) & is.na(win_conditions) ~ "Tie"
-    )
+    ),
+    match_score = str_c(home_team_goals, away_team_goals, sep = " - ")
   ) %>% 
   select(
     -(home_team_name:away_team_name),
