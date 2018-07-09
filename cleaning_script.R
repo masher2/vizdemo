@@ -16,8 +16,7 @@ players  <-
   mutate(
     player_name = str_to_title(player_name),
     coach_name = str_remove(coach_name, "\\s\\(.+\\)$") %>% str_to_title()
-  ) %>% 
-  select(-team_initials)
+  )
 
 matches  <- 
   read_excel("data/Dataset.xlsx", sheet=2) %>% 

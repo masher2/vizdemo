@@ -132,7 +132,13 @@ server <- function(input, output, session) {
 
     # Score per cup -------------------------------------------------------
     } else {
-      linedata <- distinct(df(), year, country, team_total_score)
+      linedata <- distinct(df(), cupname, team_total_score)
+      
+      if (nrow(linedata) > 1) {
+        cats <- linedata$cupname
+      } else {
+        cats <- list(linedata$cupname)
+      }
       
       highchart() %>% 
         hc_add_series(data = linedata$team_total_score,
@@ -141,7 +147,7 @@ server <- function(input, output, session) {
                       events = list(
                         click = JS("function(event) {Shiny.onInputChange('wc_date', [event.point.category.name]);}")
                       )) %>% 
-        hc_xAxis(categories = paste(linedata$country, linedata$year)) %>%
+        hc_xAxis(categories = cats) %>%
         hc_title(text = "Total goals per cup")
     }
   })
