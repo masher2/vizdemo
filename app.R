@@ -23,36 +23,12 @@ country_list <-
     home = paste(home_team_name, home_team_initials, sep = "/"),
     away = paste(away_team_name, away_team_initials, sep = "/")
   ) %>% 
-  gather() %>% 
+  tidyr::gather() %>% 
   distinct(value) %>% 
   tidyr::separate(value, into = c("name", "initials"), sep ="/") %>% 
   split(.$name) %>% 
   purrr::map(~.$initials)
 
-wc_list <- c(
-  "All cups"          = 0,
-  "Uruguay 1930"      = 1930,
-  "Italy 1934"        = 1934,
-  "France 1938"       = 1938,
-  "Brazil 1950"       = 1950,
-  "Switzerland 1954"  = 1954,
-  "Sweden 1958"       = 1958,
-  "Chile 1962"        = 1962,
-  "England 1966"      = 1966,
-  "Mexico 1970"       = 1970,
-  "Germany 1974"      = 1974,
-  "Argentina 1978"    = 1978,
-  "Spain 1982"        = 1982,
-  "Mexico 1986"       = 1986,
-  "Italy 1990"        = 1990,
-  "USA 1994"          = 1994,
-  "France 1998"       = 1998,
-  "Korea/Japan 2002"  = 2002,
-  "Germany 2006"      = 2006,
-  "South Africa 2010" = 2010,
-  "Brazil 2014"       = 2014
-)
-  
 # User Interface ----------------------------------------------------------
 
 ui <- 
@@ -70,7 +46,7 @@ ui <-
                   selectize = FALSE),
       selectInput("wc",
                   "Year of the world cup:",
-                  choices = wc_list,
+                  choices = list("All cups" = 0),
                   selected = "All cups",
                   selectize = FALSE),
       actionButton("closetab", "Close current tab", icon("window-close"))
@@ -108,6 +84,21 @@ server <- function(input, output, session) {
   # Title -----------------------------------------------------------------
   output$teamname <- renderText({
     df() %>% pull(team_name) %>% .[1]
+  })
+
+  # Update world cups assisted --------------------------------------------
+  wc_assisted <- reactive({
+    df() %>% 
+      distinct(cupname, year) %>%
+      split(.$cupname) %>% 
+      purrr::map(~.$year) %>% 
+      c("All cups" = 0, .)
+  })
+  
+  observe({
+    updateSelectInput(session,
+                      "wc",
+                      choices = wc_assisted())
   })
   
   # Linechart -------------------------------------------------------------
@@ -157,7 +148,7 @@ server <- function(input, output, session) {
 
   # Filter by world cup ---------------------------------------------------
   observeEvent(input$wc_date != "",
-               updateSelectInput(session, "wc", selected = wc_list[input$wc_date]),
+               updateSelectInput(session, "wc", selected = wc_assisted()[input$wc_date]),
                ignoreInit = TRUE)
 
   # Add match tab ---------------------------------------------------------
