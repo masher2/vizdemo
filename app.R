@@ -177,7 +177,7 @@ server <- function(input, output, session) {
                  coach <- match_info[[1, "coach_name"]]
                  
                  match_info %<>% 
-                   select(player_name, shirt_number, line_up)
+                   select(player_name, shirt_number, line_up, position, event)
                  
                  appendTab(
                    inputId = "tabs",
@@ -192,6 +192,7 @@ server <- function(input, output, session) {
                             ),
                             fluidRow(
                               box(width = 12,
+                                  status = "primary",
                                   title = "Team lineup",
                                   DT::renderDataTable(match_info))
                             )))
