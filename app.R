@@ -13,21 +13,29 @@ library(magrittr)
 library(dplyr)
 library(highcharter)
 
+import::from("DT", renderDataTable)
+import::from("glue", glue)
+import::from("janitor", clean_names)
+import::from("lubridate", floor_date)
+import::from("purrr", map)
+import::from("readr", read_csv)
+import::from("readxl", read_excel)
+import::from("tidyr", gather, separate)
 
 # Choices -----------------------------------------------------------------
 
 country_list <-
-  readxl::read_excel("data/Dataset.xlsx", sheet = 2) %>% 
-  janitor::clean_names() %>% 
+  read_excel("data/Dataset.xlsx", sheet = 2) %>% 
+  clean_names() %>% 
   transmute(
     home = paste(home_team_name, home_team_initials, sep = "/"),
     away = paste(away_team_name, away_team_initials, sep = "/")
   ) %>% 
-  tidyr::gather() %>% 
+  gather() %>% 
   distinct(value) %>% 
-  tidyr::separate(value, into = c("name", "initials"), sep ="/") %>% 
+  separate(value, into = c("name", "initials"), sep ="/") %>% 
   split(.$name) %>% 
-  purrr::map(~.$initials)
+  map(~.$initials)
 
 # User Interface ----------------------------------------------------------
 
@@ -78,7 +86,7 @@ server <- function(input, output, session) {
 
   # Data --------------------------------------------------------------------
   df <- reactive({
-    readr::read_csv(glue::glue("output/data_{input$team}.csv"))
+    read_csv(glue("output/data_{input$team}.csv"))
   })
   
   # Title -----------------------------------------------------------------
@@ -91,7 +99,7 @@ server <- function(input, output, session) {
     df() %>% 
       distinct(cupname, year) %>%
       split(.$cupname) %>% 
-      purrr::map(~.$year) %>% 
+      map(~.$year) %>% 
       c("All cups" = 0, .)
   })
   
@@ -187,14 +195,14 @@ server <- function(input, output, session) {
                                      valueBox(match_winner, "Winner", width = NULL),
                                      valueBox(match_score, "Final score", width = NULL)),
                               column(width = 6,
-                                     valueBox(lubridate::floor_date(match_date, "day"), "Date of the match", width = NULL),
+                                     valueBox(floor_date(match_date, "day"), "Date of the match", width = NULL),
                                      valueBox(coach, "Team coach", width = NULL))
                             ),
                             fluidRow(
                               box(width = 12,
                                   status = "primary",
                                   title = "Team lineup",
-                                  DT::renderDataTable(match_info))
+                                  renderDataTable(match_info))
                             )))
                },
                ignoreInit = TRUE)
