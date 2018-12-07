@@ -89,6 +89,8 @@ data %<>%
 
 # Output ------------------------------------------------------------------
 
+dir.create("/app/output/")
+
 map(
   data %>% pull(team_initials) %>% unique(),
   function(x) {
