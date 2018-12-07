@@ -11,7 +11,7 @@ library(purrr)
 # Data --------------------------------------------------------------------
 
 players  <- 
-  read_excel("data/Dataset.xlsx", sheet=1) %>% 
+  read_excel("/app/data/Dataset.xlsx", sheet=1) %>% 
   clean_names() %>% 
   mutate(
     player_name = str_to_title(player_name),
@@ -19,7 +19,7 @@ players  <-
   )
 
 matches  <- 
-  read_excel("data/Dataset.xlsx", sheet=2) %>% 
+  read_excel("/app/data/Dataset.xlsx", sheet=2) %>% 
   clean_names() %>% 
   mutate(
     home = str_c(home_team_name, home_team_initials, home_team_goals, sep = "/"),
@@ -50,7 +50,7 @@ matches  <-
   ungroup()
 
 worldcup <- 
-  read_excel("data/Dataset.xlsx", sheet = 3) %>% 
+  read_excel("/app/data/Dataset.xlsx", sheet = 3) %>% 
   clean_names() %>% 
   mutate(cupname = paste(country, year))
 
@@ -94,7 +94,7 @@ map(
   function(x) {
     data %>% 
       filter(team_initials == x) %>% 
-      write.csv(paste0("output/data_", x, ".csv"),
+      write.csv(paste0("/app/output/data_", x, ".csv"),
                 row.names = FALSE)
     print(paste("Done for:", x))
   }

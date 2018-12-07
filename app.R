@@ -25,7 +25,7 @@ import::from("tidyr", gather, separate)
 # Choices -----------------------------------------------------------------
 
 country_list <-
-  read_excel("data/Dataset.xlsx", sheet = 2) %>% 
+  read_excel("/app/data/Dataset.xlsx", sheet = 2) %>% 
   clean_names() %>% 
   transmute(
     home = paste(home_team_name, home_team_initials, sep = "/"),
