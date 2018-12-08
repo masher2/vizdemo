@@ -1,15 +1,16 @@
 packs <- c(
-  "dplyr",
   "DT",
-  "glue",
+  "dplyr",
   "highcharter",
   "janitor",
   "lubridate",
   "magrittr",
   "purrr",
   "readxl",
+  "scales",
   "shiny",
   "shinydashboard",
+  "stringr",
   "tidyr"
 )
 

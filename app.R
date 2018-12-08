@@ -18,7 +18,7 @@ library(highcharter)
 # Choices -----------------------------------------------------------------
 
 country_list <-
-  readxl::read_excel("/app/data/Dataset.xlsx", sheet = 2) %>% 
+  readxl::read_excel("data/Dataset.xlsx", sheet = 2) %>% 
   janitor::clean_names() %>% 
   transmute(
     home = paste(home_team_name, home_team_initials, sep = "/"),
@@ -79,7 +79,8 @@ server <- function(input, output, session) {
 
   # Data --------------------------------------------------------------------
   df <- reactive({
-    read.csv(glue::glue("output/data_{input$team}.csv"), stringsAsFactors=FALSE)
+    read.csv(sprintf("output/data_%s.csv", input$team), stringsAsFactors=FALSE) %>%
+        mutate(datetime = lubridate::ymd_hms(datetime))
   })
   
   # Title -----------------------------------------------------------------
