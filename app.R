@@ -34,7 +34,7 @@ country_list <-
 
 ui <- 
   dashboardPage(
-    
+
     # Header --------------------------------------------------------------
     dashboardHeader(title = textOutput("teamname")),
 
@@ -61,8 +61,7 @@ ui <-
           title = "Main panel",
           value = "main_tab",
           fluidRow(
-            column(width = 8,
-                   highchartOutput("linechart")),
+            column(8, highchartOutput("linechart")),
             valueBoxOutput("winner_count"),
             valueBoxOutput("perc_win"),
             valueBoxOutput("matches_played")
@@ -82,7 +81,7 @@ server <- function(input, output, session) {
     read.csv(sprintf("output/data_%s.csv", input$team), stringsAsFactors=FALSE) %>%
         mutate(datetime = lubridate::ymd_hms(datetime))
   })
-  
+
   # Title -----------------------------------------------------------------
   output$teamname <- renderText({
     df() %>% pull(team_name) %>% .[1]
@@ -96,16 +95,14 @@ server <- function(input, output, session) {
       purrr::map(~.$year) %>% 
       c("All cups" = 0, .)
   })
-  
+
   observe({
-    updateSelectInput(session,
-                      "wc",
-                      choices = wc_assisted())
+    updateSelectInput(session, "wc", choices = wc_assisted())
   })
-  
+
   # Linechart -------------------------------------------------------------
   output$linechart <- renderHighchart({
-  
+
     # Score per match -----------------------------------------------------
     if (input$wc != 0) {
       linedata <-
@@ -121,118 +118,148 @@ server <- function(input, output, session) {
       }
 
       highchart() %>% 
-        hc_add_series(data = linedata$score,
-                      name = "Score",
-                      showInLegend = FALSE,
-                      events = list(
-                        click = JS("function(event) {Shiny.onInputChange('wc_match', [event.point.x]);}")
-                      )) %>% 
+        hc_add_series(
+          data = linedata$score,
+          name = "Score",
+          showInLegend = FALSE,
+          events = list(
+            click = JS("function(event) {Shiny.onInputChange('wc_match', [event.point.x]);}")
+          )
+        ) %>% 
         hc_xAxis(categories = cats) %>% 
         hc_title(text = first(linedata$cupname)) %>% 
         hc_subtitle(text = "Score per match.")
-      
+
 
     # Score per cup -------------------------------------------------------
     } else {
       linedata <- distinct(df(), cupname, team_total_score)
-      
+
       if (nrow(linedata) > 1) {
         cats <- linedata$cupname
       } else {
         cats <- list(linedata$cupname)
       }
-      
+
       highchart() %>% 
-        hc_add_series(data = linedata$team_total_score,
-                      name = "Total score",
-                      showInLegend = FALSE,
-                      events = list(
-                        click = JS("function(event) {Shiny.onInputChange('wc_date', [event.point.category.name]);}")
-                      )) %>% 
+        hc_add_series(
+          data = linedata$team_total_score,
+          name = "Total score",
+          showInLegend = FALSE,
+          events = list(
+            click = JS("function(event) {Shiny.onInputChange('wc_date', [event.point.category.name]);}")
+          )
+        ) %>% 
         hc_xAxis(categories = cats) %>%
         hc_title(text = "Total goals per cup")
     }
   })
 
   # Filter by world cup ---------------------------------------------------
-  observeEvent(input$wc_date != "",
-               updateSelectInput(session, "wc", selected = wc_assisted()[input$wc_date]),
-               ignoreInit = TRUE)
+  observeEvent(
+    input$wc_date != "",
+    updateSelectInput(
+      session,
+      "wc",
+      selected = wc_assisted()[input$wc_date]
+    ),
+    ignoreInit = TRUE
+  )
 
   # Add match tab ---------------------------------------------------------
-  observeEvent(input$wc_match, 
-               {
-                 match_date <- 
-                   df() %>%
-                   filter(year == input$wc) %>%
-                   distinct(datetime) %>%
-                   pull() %>%
-                   magrittr::extract(input$wc_match + 1)
-                 
-                 match_info <- filter(df(), datetime == match_date)
-                 
-                 cup_name <- match_info[[1, "cupname"]]
-                 match_teams <- match_info[[1, "match"]]
-                 match_winner <- match_info[[1, "match_winner"]]
-                 match_score <- match_info[[1, "match_score"]]
-                 match_date <- match_info[[1, "datetime"]]
-                 coach <- match_info[[1, "coach_name"]]
-                 
-                 match_info %<>% 
-                   select(player_name, shirt_number, line_up, position, event)
-                 
-                 appendTab(
-                   inputId = "tabs",
-                   tabPanel(title = paste(cup_name, match_teams),
-                            fluidRow(
-                              column(width = 6,
-                                     valueBox(match_winner, "Winner", width = NULL),
-                                     valueBox(match_score, "Final score", width = NULL)),
-                              column(width = 6,
-                                     valueBox(lubridate::floor_date(match_date, "day"), "Date of the match", width = NULL),
-                                     valueBox(coach, "Team coach", width = NULL))
-                            ),
-                            fluidRow(
-                              box(width = 12,
-                                  status = "primary",
-                                  title = "Team lineup",
-                                  DT::renderDataTable(match_info))
-                            )))
-               },
-               ignoreInit = TRUE)
-  
+  observeEvent(
+    input$wc_match, 
+    {
+      match_date <- 
+        df() %>%
+        filter(year == input$wc) %>%
+        distinct(datetime) %>%
+        pull() %>%
+        magrittr::extract(input$wc_match + 1)
+
+      match_info <- filter(df(), datetime == match_date)
+
+      cup_name <- match_info[[1, "cupname"]]
+      match_teams <- match_info[[1, "match"]]
+      match_winner <- match_info[[1, "match_winner"]]
+      match_score <- match_info[[1, "match_score"]]
+      match_date <- match_info[[1, "datetime"]]
+      coach <- match_info[[1, "coach_name"]]
+
+      match_info %<>% 
+        select(player_name, shirt_number, line_up, position, event)
+
+      appendTab(
+        inputId = "tabs",
+        tabPanel(title = paste(cup_name, match_teams),
+          fluidRow(
+            column(
+              6,
+              valueBox(match_winner, "Winner", width = NULL),
+              valueBox(match_score, "Final score", width = NULL)
+            ),
+            column(
+              6,
+              valueBox(
+                lubridate::floor_date(match_date, "day"),
+                "Date of the match",
+                width = NULL
+              ),
+              valueBox(coach, "Team coach", width = NULL)
+            )
+          ),
+          fluidRow(
+            box(width = 12,
+              status = "primary",
+              title = "Team lineup",
+              DT::renderDataTable(match_info)
+            )
+          )
+        )
+      )
+    },
+    ignoreInit = TRUE
+  )
 
   # Close current tab -----------------------------------------------------
-  observeEvent(input$closetab,
-               if (input$tabs != "main_tab") {
-                 removeTab("tabs", input$tabs)
-               })
-  
+  observeEvent(
+    input$closetab,
+    if (input$tabs != "main_tab") {
+      removeTab("tabs", input$tabs)
+    }
+  )
+
   # Win count / position in cup -------------------------------------------
   output$winner_count <- renderValueBox({
     win_count <- distinct(df(), year, winner, team_name, team_outcome)
-    
+
     if (input$wc != 0) win_count %<>% filter(year == input$wc)
-    
+
     win_count %<>% 
-      summarise(is_winner = sum(if_else(winner == team_name, 1, 0)),
-                team_outcome = first(team_outcome))
-    
+      summarise(
+        is_winner = sum(if_else(winner == team_name, 1, 0)),
+        team_outcome = first(team_outcome)
+      )
+
     if (input$wc == 0){ 
-      valueBox(value = win_count$is_winner,
-               subtitle = "Times champion.")
+      valueBox(
+        value = win_count$is_winner,
+        subtitle = "Times champion."
+      )
     } else {
-      valueBox(value = win_count$team_outcome,
-               subtitle = "Position")
+      valueBox(
+        value = win_count$team_outcome,
+        subtitle = "Position"
+      )
     }
   })
 
   # N matches won ---------------------------------------------------------
   output$perc_win <- renderValueBox({
     matches_won <- distinct(df(), year, match_id, team_initials, match_winner)
-    
+
     if (input$wc != 0) matches_won %<>% filter(year == input$wc)
-    
+
     matches_won %<>% 
       summarise(
         matches_won = sum(team_initials == match_winner),
@@ -240,17 +267,19 @@ server <- function(input, output, session) {
         perc_win = matches_won / matches_played
       ) %>% 
       pull(perc_win)
-    
-    valueBox(value = scales::percent(matches_won),
-             subtitle = "of matches played won.")
+
+    valueBox(
+      value = scales::percent(matches_won),
+      subtitle = "of matches played won."
+    )
   })
-  
+
   # % ties ----------------------------------------------------------------
   output$matches_played <- renderValueBox({
     ties <- distinct(df(), year, match_id, match_winner)
-    
+
     if (input$wc != 0) ties %<>% filter(year == input$wc)
-    
+
     ties %<>% 
       summarise(
         ties = sum(match_winner == "Tie"),
@@ -258,9 +287,11 @@ server <- function(input, output, session) {
         perc_ties = ties / matches_played
       ) %>% 
       pull(perc_ties)
-    
-    valueBox(value = scales::percent(ties),
-             subtitle = "of matches played were ties.")
+
+    valueBox(
+      value = scales::percent(ties),
+      subtitle = "of matches played were ties."
+    )
   })
 }
 
