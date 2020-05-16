@@ -15,7 +15,7 @@ library(tidyr)
 library(highcharter)
 
 
-# Choices -----------------------------------------------------------------
+# Choices -----
 
 country_list <-
   readxl::read_excel("data/Dataset.xlsx", sheet = 2) %>% 
@@ -30,15 +30,15 @@ country_list <-
   split(.$name) %>% 
   purrr::map(~.$initials)
 
-# User Interface ----------------------------------------------------------
+# User Interface ----
 
 ui <- 
   dashboardPage(
 
-    # Header --------------------------------------------------------------
+    # Header -----
     dashboardHeader(title = textOutput("teamname")),
 
-    # Sidebar -------------------------------------------------------------
+    # Sidebar -----
     dashboardSidebar(
       selectInput("team",
                   "Select a team:",
@@ -53,7 +53,7 @@ ui <-
       actionButton("closetab", "Close current tab", icon("window-close"))
     ),
 
-    # Body ----------------------------------------------------------------
+    # Body ----
     dashboardBody(
       tabsetPanel(
         id = "tabs",
@@ -72,22 +72,22 @@ ui <-
   )
 
 
-# Server ------------------------------------------------------------------
+# Server ----
 
 server <- function(input, output, session) {
 
-  # Data --------------------------------------------------------------------
+  # Data ----
   df <- reactive({
-    read.csv(sprintf("output/data_%s.csv", input$team), stringsAsFactors=FALSE) %>%
+    read.csv(sprintf("output/data_%s.csv", input$team), stringsAsFactors = FALSE) %>%
         mutate(datetime = lubridate::ymd_hms(datetime))
   })
 
-  # Title -----------------------------------------------------------------
+  # Title ----
   output$teamname <- renderText({
     df() %>% pull(team_name) %>% .[1]
   })
 
-  # Update world cups assisted --------------------------------------------
+  # Update world cups assisted -----
   wc_assisted <- reactive({
     df() %>% 
       distinct(cupname, year) %>%
@@ -100,10 +100,10 @@ server <- function(input, output, session) {
     updateSelectInput(session, "wc", choices = wc_assisted())
   })
 
-  # Linechart -------------------------------------------------------------
+  # Linechart -----
   output$linechart <- renderHighchart({
 
-    # Score per match -----------------------------------------------------
+    # Score per match -----
     if (input$wc != 0) {
       linedata <- df() %>% 
         filter(year == input$wc) %>% 
@@ -130,7 +130,7 @@ server <- function(input, output, session) {
         hc_subtitle(text = "Score per match.")
 
 
-    # Score per cup -------------------------------------------------------
+    # Score per cup ----
     } else {
       linedata <- distinct(df(), cupname, team_total_score)
 
@@ -154,7 +154,7 @@ server <- function(input, output, session) {
     }
   })
 
-  # Filter by world cup ---------------------------------------------------
+  # Filter by world cup ----
   observeEvent(
     input$wc_date != "",
     updateSelectInput(
