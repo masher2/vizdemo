@@ -105,8 +105,7 @@ server <- function(input, output, session) {
 
     # Score per match -----------------------------------------------------
     if (input$wc != 0) {
-      linedata <-
-        df() %>% 
+      linedata <- df() %>% 
         filter(year == input$wc) %>% 
         distinct(datetime, match, score, cupname) %>% 
         arrange(datetime)

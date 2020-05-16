@@ -1,5 +1,4 @@
-# Packs -------------------------------------------------------------------
-
+# Packs ----
 library(magrittr)
 library(readxl)
 library(janitor)
@@ -8,18 +7,16 @@ library(stringr)
 library(tidyr)
 library(purrr)
 
-# Data --------------------------------------------------------------------
+# Data ----
 
-players  <- 
-  read_excel("/app/data/Dataset.xlsx", sheet=1) %>% 
+players  <- read_excel("data/Dataset.xlsx", sheet = 1) %>% 
   clean_names() %>% 
   mutate(
     player_name = str_to_title(player_name),
     coach_name = str_remove(coach_name, "\\s\\(.+\\)$") %>% str_to_title()
   )
 
-matches  <- 
-  read_excel("/app/data/Dataset.xlsx", sheet=2) %>% 
+matches  <- read_excel("data/Dataset.xlsx", sheet = 2) %>%
   clean_names() %>% 
   mutate(
     home = str_c(home_team_name, home_team_initials, home_team_goals, sep = "/"),
@@ -50,18 +47,17 @@ matches  <-
   ungroup()
 
 worldcup <- 
-  read_excel("/app/data/Dataset.xlsx", sheet = 3) %>% 
+  read_excel("data/Dataset.xlsx", sheet = 3) %>% 
   clean_names() %>% 
   mutate(cupname = paste(country, year))
 
-# Joins -------------------------------------------------------------------
+# Joins ----
 
-data <- 
-  players %>% 
+data <- players %>% 
   left_join(matches, by = c("round_id", "match_id", "team_initials")) %>% 
   left_join(worldcup, by = c("year"))
 
-# Transformations ---------------------------------------------------------
+# Transformations ----
 
 data %<>% 
   mutate(datetime = lubridate::dmy_hm(datetime)) %>% 
@@ -87,16 +83,16 @@ data %<>%
   )
   
 
-# Output ------------------------------------------------------------------
+# Output -----
 
-dir.create("/app/output/")
+dir.create("output/")
 
 map(
   data %>% pull(team_initials) %>% unique(),
   function(x) {
     data %>% 
       filter(team_initials == x) %>% 
-      write.csv(paste0("/app/output/data_", x, ".csv"),
+      write.csv(paste0("output/data_", x, ".csv"),
                 row.names = FALSE)
     print(paste("Done for:", x))
   }
