@@ -13,6 +13,7 @@ library(magrittr)
 library(dplyr)
 library(tidyr)
 library(highcharter)
+library(shinydashboardPlus)
 
 
 # Choices -----
@@ -33,24 +34,40 @@ country_list <-
 # User Interface ----
 
 ui <- 
-  dashboardPage(
+  dashboardPagePlus(
+    # Title ----
+    title = 'FIFA World Cups',
+    collapse_sidebar = TRUE,
 
     # Header -----
-    dashboardHeader(title = textOutput("teamname")),
+    dashboardHeaderPlus(
+      title = textOutput("teamname"),
+      titleWidth = 233,
+      enable_rightsidebar = TRUE,
+      rightSidebarIcon = "bars"
+      ),
 
     # Sidebar -----
     dashboardSidebar(
-      selectInput("team",
-                  "Select a team:",
-                  choices = country_list,
-                  selected = "Algeria",
-                  selectize = FALSE),
-      selectInput("wc",
-                  "Year of the world cup:",
-                  choices = list("All cups" = 0),
-                  selected = "All cups",
-                  selectize = FALSE),
-      actionButton("closetab", "Close current tab", icon("window-close"))
+      sidebarMenu(id = "sts", sidebarMenuOutput('collapsible_sidebar')),
+      tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "style.css")),
+      conditionalPanel(
+      condition = "input.sts == 'stats'",
+        selectInput("team",
+                    "Select a team:",
+                    choices = country_list,
+                    selected = "Algeria",
+                    selectize = FALSE),
+        selectInput("wc",
+                    "Year of the world cup:",
+                    choices = list("All cups" = 0),
+                    selected = "All cups",
+                    selectize = FALSE),
+        actionButton("closetab", "Close current tab", icon("window-close"))
+      ),
+      conditionalPanel(
+        condition = "input.sts == 'records'"
+      )
     ),
 
     # Body ----
@@ -76,6 +93,46 @@ ui <-
 
 server <- function(input, output, session) {
 
+  # Sidebar Menu output ----
+  output$collapsible_sidebar = renderMenu({
+    sidebarMenu(
+      # br(),
+      # meniItem Tiburones de la Guaira ----
+      menuItem(
+        text = 'Inicio',
+        tabName = 'inicio',
+        badgeLabel = "new", 
+        badgeColor = "green",
+        icon = icon('text-height', lib = 'font-awesome')
+      ),
+      # menuItem  Datos ----
+      menuItem(
+        'Stats',
+        tabName = 'stats',
+        icon = icon('chart-line', lib = 'font-awesome')
+      ),
+      # menuItem Records ----
+      menuItem(
+        'Records',
+        tabName = 'records',
+        icon = icon('edit', lib = 'font-awesome')
+        # menuSubItem('Historicos', tabName = 'historicos'),
+        # menuSubItem('Por temporadas', tabName = 'p_tem'),
+        # menuSubItem('Records en LVBP', tabName = 'lvbp'),
+        # menuSubItem('Sabermetria', tabName = 'saberm')
+      ),
+      # menuItem Historia ----
+      menuItem(
+        'Historia',
+        tabName = 'historia',
+        icon = icon('search-location', lib = 'font-awesome')
+        # menuSubItem('En números', tabName = 'en_num'),
+        # menuSubItem('Estadio', tabName = 'rr_sm')
+      )
+    )
+    
+  })
+  
   # Data ----
   df <- reactive({
     read.csv(sprintf("output/data_%s.csv", input$team), stringsAsFactors = FALSE) %>%
@@ -191,6 +248,7 @@ server <- function(input, output, session) {
       appendTab(
         inputId = "tabs",
         tabPanel(title = paste(cup_name, match_teams),
+          br(),
           fluidRow(
             column(
               6,
